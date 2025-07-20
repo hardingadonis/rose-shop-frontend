@@ -1,4 +1,5 @@
 import { FlowerCard } from '../components/FlowerCard';
+import { useCart } from '../hooks/useCart';
 import apiClient from '../services/api';
 import { cartService } from '../services/cartService';
 import { flowerService } from '../services/flowerService';
@@ -26,6 +27,7 @@ const { Option } = Select;
 
 export const FlowerList: React.FC = () => {
 	const notification = useUserNotification();
+	const { refreshCart } = useCart();
 	const [flowers, setFlowers] = useState<Flower[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -142,6 +144,8 @@ export const FlowerList: React.FC = () => {
 	const handleAddToCart = async (flowerId: string) => {
 		try {
 			await cartService.addToCart(flowerId, 1);
+			// Refresh cart context after adding item
+			await refreshCart();
 			notification.addToCartSuccess();
 		} catch (err) {
 			console.error('Error adding to cart:', err);
@@ -270,3 +274,4 @@ export const FlowerList: React.FC = () => {
 		</div>
 	);
 };
+

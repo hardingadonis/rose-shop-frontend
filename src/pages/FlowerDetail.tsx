@@ -1,4 +1,5 @@
 import { FlowerCard } from '../components/FlowerCard';
+import { useCart } from '../hooks/useCart';
 import { cartService } from '../services/cartService';
 import { flowerService } from '../services/flowerService';
 import { useUserNotification } from '../services/userNotification';
@@ -33,6 +34,7 @@ const { Title, Text, Paragraph } = Typography;
 export const FlowerDetail: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const notification = useUserNotification();
+	const { refreshCart } = useCart();
 	const [flower, setFlower] = useState<Flower | null>(null);
 	const [suggestedFlowers, setSuggestedFlowers] = useState<Flower[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -82,6 +84,8 @@ export const FlowerDetail: React.FC = () => {
 		setAddingToCart(true);
 		try {
 			await cartService.addToCart(flower.flowerId?.toString() || '', quantity);
+			// Refresh cart context after adding item
+			await refreshCart();
 			notification.addToCartSuccess(flower.flowerName);
 		} catch (err) {
 			console.error('Error adding to cart:', err);
@@ -117,6 +121,8 @@ export const FlowerDetail: React.FC = () => {
 	const handleSuggestedAddToCart = async (flowerId: string) => {
 		try {
 			await cartService.addToCart(flowerId, 1);
+			// Refresh cart context after adding item
+			await refreshCart();
 			notification.addToCartSuccess();
 		} catch (err) {
 			console.error('Error adding to cart:', err);
@@ -489,3 +495,4 @@ export const FlowerDetail: React.FC = () => {
 		</div>
 	);
 };
+
