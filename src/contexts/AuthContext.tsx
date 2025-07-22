@@ -1,4 +1,6 @@
 import { authService } from '../services/authService';
+import { cartService } from '../services/cartService';
+import { localStorageService } from '../services/localStorageService';
 import type { User } from '../types';
 import React, { createContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -35,10 +37,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				try {
 					const userData = await authService.getCurrentUser();
 					setUser(userData);
+
+					// Load cart from API when user is authenticated
+					try {
+						const cartData = await cartService.getMyCart();
+						localStorageService.setCart(cartData);
+					} catch (cartError) {
+						console.error('Error loading cart after auth:', cartError);
+					}
 				} catch {
 					// Clear invalid tokens or admin tokens
 					localStorage.removeItem('token');
 					localStorage.removeItem('user');
+					localStorageService.clearCart(); // Clear cart khi token invalid
 				}
 			}
 			setLoading(false);
@@ -46,6 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 		initializeAuth();
 	}, []);
+
 	const login = async (username: string, password: string) => {
 		const { user: userData, token } = await authService.login(
 			username,
@@ -55,9 +67,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		localStorage.setItem('user', JSON.stringify(userData));
 		setUser(userData);
 
+		// Load cart from API after successful login
+		try {
+			const cartData = await cartService.getMyCart();
+			localStorageService.setCart(cartData);
+		} catch (cartError) {
+			console.error('Error loading cart after login:', cartError);
+		}
+
 		// Return user data for component to handle redirects
 		return userData;
 	};
+
 	const register = async (userData: {
 		username: string;
 		email: string;
@@ -67,13 +88,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		localStorage.setItem('token', token);
 		localStorage.setItem('user', JSON.stringify(newUser));
 		setUser(newUser);
+
+		// Load cart from API after successful registration
+		try {
+			const cartData = await cartService.getMyCart();
+			localStorageService.setCart(cartData);
+		} catch (cartError) {
+			console.error('Error loading cart after registration:', cartError);
+		}
 	};
 
 	const logout = () => {
 		localStorage.removeItem('token');
 		localStorage.removeItem('user');
+		localStorageService.clearCart(); // Clear cart khi logout
 		setUser(null);
 	};
+
 	const updateUser = async (userData: FormData | Partial<User>) => {
 		const updatedUser = await authService.updateProfile(userData);
 		setUser(updatedUser);
@@ -91,3 +122,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+

@@ -1,6 +1,7 @@
+import { useCart } from '../hooks/useCart';
 import { cartService } from '../services/cartService';
 import { useUserNotification } from '../services/userNotification';
-import type { CartItem, CartResponse, CartSummary } from '../types';
+import type { CartItem, CartSummary } from '../types';
 import {
 	ClearOutlined,
 	DeleteOutlined,
@@ -9,7 +10,6 @@ import {
 	ShoppingOutlined,
 } from '@ant-design/icons';
 import {
-	Alert,
 	Button,
 	Card,
 	Col,
@@ -25,7 +25,7 @@ import {
 	Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -33,55 +33,9 @@ const { Title, Text } = Typography;
 export const Cart: React.FC = () => {
 	const navigate = useNavigate();
 	const notification = useUserNotification();
-	const [cartData, setCartData] = useState<CartResponse>({
-		items: [],
-		summary: {
-			grandTotal: 0,
-			totalItems: 0,
-			totalTypes: 0,
-			totalQuantity: 0,
-			subtotal: 0,
-			total: 0,
-			tax: 0,
-			discount: 0,
-			shipping: 0,
-		},
-	});
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const { cartData, refreshCart, loading: cartLoading } = useCart();
+	const [loading, setLoading] = useState(false);
 	const [updating, setUpdating] = useState<string | null>(null);
-
-	useEffect(() => {
-		fetchCartData();
-	}, []);
-
-	const fetchCartData = async () => {
-		try {
-			setLoading(true);
-			const data = await cartService.getMyCart();
-			setCartData(data);
-			setError(null);
-		} catch (err) {
-			setError('Failed to load cart. Please try again.');
-			console.error('Error fetching cart:', err);
-			setCartData({
-				items: [],
-				summary: {
-					grandTotal: 0,
-					totalItems: 0,
-					totalTypes: 0,
-					totalQuantity: 0,
-					subtotal: 0,
-					total: 0,
-					tax: 0,
-					discount: 0,
-					shipping: 0,
-				},
-			});
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	const handleQuantityChange = async (cartId: string, quantity: number) => {
 		if (quantity < 1) return;
@@ -89,7 +43,8 @@ export const Cart: React.FC = () => {
 		setUpdating(cartId);
 		try {
 			await cartService.updateCartItem(cartId, quantity);
-			await fetchCartData(); // Refresh cart data
+			// Refresh cart context after updating
+			await refreshCart();
 			notification.success('Cart updated successfully');
 		} catch (err) {
 			notification.actionFailed('Update cart', 'Failed to update cart item');
@@ -103,7 +58,8 @@ export const Cart: React.FC = () => {
 		setUpdating(cartId);
 		try {
 			await cartService.removeFromCart(cartId);
-			await fetchCartData(); // Refresh cart data
+			// Refresh cart context after removing item
+			await refreshCart();
 			notification.success('Item removed from cart');
 		} catch (err) {
 			notification.actionFailed(
@@ -120,7 +76,8 @@ export const Cart: React.FC = () => {
 		setLoading(true);
 		try {
 			await cartService.clearCart();
-			await fetchCartData(); // Refresh cart data
+			// Refresh cart context after clearing
+			await refreshCart();
 			notification.success('Cart cleared successfully');
 		} catch (err) {
 			notification.actionFailed('Clear cart', 'Failed to clear cart');
@@ -332,31 +289,16 @@ export const Cart: React.FC = () => {
 		);
 	};
 
-	if (loading) {
+	// Use loading from both local state and cart context
+	const isLoading = loading || cartLoading;
+
+	if (isLoading) {
 		return (
 			<div style={{ textAlign: 'center', padding: '50px 0' }}>
 				<Spin size="large" />
 				<div style={{ marginTop: 16 }}>
 					<Text>Loading your cart...</Text>
 				</div>
-			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<div style={{ padding: '20px 0' }}>
-				<Alert
-					message="Error"
-					description={error}
-					type="error"
-					showIcon
-					action={
-						<Button size="small" onClick={fetchCartData}>
-							Retry
-						</Button>
-					}
-				/>
 			</div>
 		);
 	}
@@ -433,7 +375,7 @@ export const Cart: React.FC = () => {
 							dataSource={cartData.items}
 							rowKey="cartId"
 							pagination={false}
-							loading={loading}
+							loading={isLoading}
 							scroll={{ x: 800 }}
 						/>
 					</Card>
@@ -446,3 +388,4 @@ export const Cart: React.FC = () => {
 		</div>
 	);
 };
+

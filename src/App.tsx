@@ -9,6 +9,7 @@ import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 import { Cart } from './pages/Cart';
 import { Checkout } from './pages/Checkout';
 import { EnterResetToken } from './pages/EnterResetToken';
@@ -132,134 +133,136 @@ function App() {
 							path="/*"
 							element={
 								<AuthProvider>
-									<Routes>
-										{/* Public Routes */}
-										<Route path="/login" element={<Login />} />
-										<Route path="/register" element={<Register />} />
-										<Route
-											path="/forgot-password"
-											element={<ForgotPassword />}
-										/>
-										<Route
-											path="/enter-reset-token"
-											element={<EnterResetToken />}
-										/>
-										<Route
-											path="/reset-password/:token"
-											element={<ResetPassword />}
-										/>
+									<CartProvider>
+										<Routes>
+											{/* Public Routes */}
+											<Route path="/login" element={<Login />} />
+											<Route path="/register" element={<Register />} />
+											<Route
+												path="/forgot-password"
+												element={<ForgotPassword />}
+											/>
+											<Route
+												path="/enter-reset-token"
+												element={<EnterResetToken />}
+											/>
+											<Route
+												path="/reset-password/:token"
+												element={<ResetPassword />}
+											/>
 
-										{/* Main Layout Routes */}
-										<Route
-											path="/"
-											element={
-												<MainLayout>
-													<Home />
-												</MainLayout>
-											}
-										/>
-										<Route
-											path="/flowers"
-											element={
-												<MainLayout>
-													<FlowerList />
-												</MainLayout>
-											}
-										/>
-										<Route
-											path="/flowers/:id"
-											element={
-												<MainLayout>
-													<FlowerDetail />
-												</MainLayout>
-											}
-										/>
-										{/* Protected Routes */}
-										<Route
-											path="/cart"
-											element={
-												<ProtectedRoute>
+											{/* Main Layout Routes */}
+											<Route
+												path="/"
+												element={
 													<MainLayout>
-														<Cart />
+														<Home />
 													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/checkout"
-											element={
-												<ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/flowers"
+												element={
 													<MainLayout>
-														<Checkout />
+														<FlowerList />
 													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/orders"
-											element={
-												<ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/flowers/:id"
+												element={
 													<MainLayout>
-														<Orders />
+														<FlowerDetail />
 													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/orders/:orderId"
-											element={
-												<ProtectedRoute>
+												}
+											/>
+											{/* Protected Routes */}
+											<Route
+												path="/cart"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<Cart />
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/checkout"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<Checkout />
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/orders"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<Orders />
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/orders/:orderId"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<OrderDetail />
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/profile"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<Profile />
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/addresses"
+												element={
+													<ProtectedRoute>
+														<MainLayout>
+															<div>Address Book Page - Coming Soon</div>
+														</MainLayout>
+													</ProtectedRoute>
+												}
+											/>
+											<Route
+												path="/payment/success"
+												element={
 													<MainLayout>
-														<OrderDetail />
+														<PaymentSuccess />
 													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/profile"
-											element={
-												<ProtectedRoute>
+												}
+											/>
+											{/* 404 Route */}
+											<Route
+												path="*"
+												element={
 													<MainLayout>
-														<Profile />
+														<div className="text-center py-16">
+															<h1 className="text-4xl font-bold text-gray-800 mb-4">
+																404 - Page Not Found
+															</h1>
+															<p className="text-gray-600">
+																The page you're looking for doesn't exist.
+															</p>
+														</div>
 													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/addresses"
-											element={
-												<ProtectedRoute>
-													<MainLayout>
-														<div>Address Book Page - Coming Soon</div>
-													</MainLayout>
-												</ProtectedRoute>
-											}
-										/>
-										<Route
-											path="/payment/success"
-											element={
-												<MainLayout>
-													<PaymentSuccess />
-												</MainLayout>
-											}
-										/>
-										{/* 404 Route */}
-										<Route
-											path="*"
-											element={
-												<MainLayout>
-													<div className="text-center py-16">
-														<h1 className="text-4xl font-bold text-gray-800 mb-4">
-															404 - Page Not Found
-														</h1>
-														<p className="text-gray-600">
-															The page you're looking for doesn't exist.
-														</p>
-													</div>
-												</MainLayout>
-											}
-										/>
-									</Routes>
+												}
+											/>
+										</Routes>
+									</CartProvider>
 								</AuthProvider>
 							}
 						/>
@@ -271,3 +274,4 @@ function App() {
 }
 
 export default App;
+

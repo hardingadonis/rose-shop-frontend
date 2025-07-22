@@ -1,4 +1,5 @@
 import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../hooks/useCart';
 import { addressService } from '../services/addressService';
 import { cartService } from '../services/cartService';
 import { orderService } from '../services/orderService';
@@ -62,6 +63,7 @@ export const Checkout: React.FC = () => {
 	const location = useLocation();
 	const notification = useUserNotification();
 	const { user } = useAuth();
+	const { refreshCart } = useCart();
 	const [form] = Form.useForm();
 	const [cartItems, setCartItems] = useState<CartItem[]>([]);
 	const [addresses, setAddresses] = useState<AddressResponse[]>([]);
@@ -78,6 +80,9 @@ export const Checkout: React.FC = () => {
 	const [isBuyNow, setIsBuyNow] = useState(false);
 	const [shippingFee, setShippingFee] = useState(30000); // Default to standard
 	const [voucherData, setVoucherData] = useState<VoucherResponse | null>(null);
+	const [availableVouchers, setAvailableVouchers] = useState<VoucherResponse[]>(
+		[],
+	);
 	const [applyingVoucher, setApplyingVoucher] = useState(false);
 
 	// Check if user has complete profile information
@@ -107,6 +112,9 @@ export const Checkout: React.FC = () => {
 
 	// Set default delivery method to 'standard' and payment method to 'COD' on mount
 	useEffect(() => {
+		// Fetch voucher data
+		fetchVoucherData();
+
 		form.setFieldsValue({ deliveryMethod: 'standard', paymentMethod: 'COD' });
 		setShippingFee(30000);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,6 +278,15 @@ export const Checkout: React.FC = () => {
 		notification.success('Voucher removed', 'The voucher has been removed');
 	};
 
+	const handleSelectVoucher = (voucher: VoucherResponse) => {
+		setVoucherData(voucher);
+		form.setFieldsValue({ voucherCode: voucher.voucherCode });
+		notification.success(
+			'Voucher selected',
+			`Voucher ${voucher.voucherCode} has been applied`,
+		);
+	};
+
 	const handleSubmitOrder = async (values: CheckoutFormValues) => {
 		if (cartItems.length === 0) {
 			notification.error('No items to order');
@@ -321,6 +338,8 @@ export const Checkout: React.FC = () => {
 						// For regular checkout, clear the cart
 						await cartService.clearCart();
 					}
+					// Refresh cart context after clearing
+					await refreshCart();
 				} catch (clearError) {
 					console.warn('Failed to clear cart after COD order:', clearError);
 					// Don't throw error here as the order was already created successfully
@@ -335,6 +354,8 @@ export const Checkout: React.FC = () => {
 				// Fallback for other cases - clear cart immediately
 				try {
 					await cartService.clearCart();
+					// Refresh cart context after clearing
+					await refreshCart();
 				} catch (clearError) {
 					console.warn('Failed to clear cart after order:', clearError);
 				}
@@ -350,6 +371,22 @@ export const Checkout: React.FC = () => {
 			);
 		} finally {
 			setSubmitting(false);
+		}
+	};
+
+	const fetchVoucherData = async () => {
+		try {
+			const response = await voucherService.getVoucherForUser();
+			console.log(response);
+			// Ensure response is an array
+			if (Array.isArray(response)) {
+				setAvailableVouchers(response);
+			} else {
+				setAvailableVouchers([]);
+			}
+		} catch (error) {
+			console.error('Error fetching vouchers:', error);
+			setAvailableVouchers([]);
 		}
 	};
 
@@ -687,7 +724,7 @@ export const Checkout: React.FC = () => {
 							style={{ marginBottom: '24px' }}
 						>
 							{voucherData ? (
-								<Form.Item label="Voucher Code">
+								<Form.Item label="Applied Voucher">
 									<div
 										style={{
 											padding: '12px',
@@ -718,27 +755,179 @@ export const Checkout: React.FC = () => {
 									</div>
 								</Form.Item>
 							) : (
-								<Form.Item name="voucherCode" label="Voucher Code">
-									<Input.Group compact>
-										<Form.Item
-											name="voucherCode"
-											noStyle
-											getValueFromEvent={(e) => e.target.value}
-										>
-											<Input
-												style={{ width: 'calc(100% - 100px)' }}
-												placeholder="Enter voucher code"
-											/>
-										</Form.Item>
-										<Button
-											type="primary"
-											loading={applyingVoucher}
-											onClick={handleApplyVoucher}
-										>
-											Apply
-										</Button>
-									</Input.Group>
-								</Form.Item>
+								<>
+									{/* Available Vouchers List */}
+									{availableVouchers.length > 0 && (
+										<div style={{ marginBottom: '16px' }}>
+											<Text
+												strong
+												style={{ marginBottom: '12px', display: 'block' }}
+											>
+												Available Vouchers:
+											</Text>
+											<div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+												{availableVouchers.map((voucher) => (
+													<div
+														key={voucher.userVoucherStatusId}
+														style={{
+															padding: '12px',
+															border: '1px solid #d9d9d9',
+															borderRadius: '6px',
+															marginBottom: '8px',
+															cursor: voucher.canUse
+																? 'pointer'
+																: 'not-allowed',
+															background: voucher.canUse ? '#fff' : '#f5f5f5',
+															opacity: voucher.canUse ? 1 : 0.6,
+															transition: 'all 0.3s ease',
+														}}
+														onClick={() =>
+															voucher.canUse && handleSelectVoucher(voucher)
+														}
+														onMouseEnter={(e) => {
+															if (voucher.canUse) {
+																e.currentTarget.style.borderColor = '#1890ff';
+																e.currentTarget.style.background = '#f0f8ff';
+															}
+														}}
+														onMouseLeave={(e) => {
+															if (voucher.canUse) {
+																e.currentTarget.style.borderColor = '#d9d9d9';
+																e.currentTarget.style.background = '#fff';
+															}
+														}}
+													>
+														<div
+															style={{
+																display: 'flex',
+																justifyContent: 'space-between',
+																alignItems: 'center',
+															}}
+														>
+															<div style={{ flex: 1 }}>
+																<div
+																	style={{
+																		display: 'flex',
+																		alignItems: 'center',
+																		gap: '8px',
+																	}}
+																>
+																	<Text
+																		strong
+																		style={{
+																			color: voucher.canUse
+																				? '#1890ff'
+																				: '#999',
+																		}}
+																	>
+																		{voucher.voucherCode}
+																	</Text>
+																	<span
+																		style={{
+																			background: voucher.canUse
+																				? '#52c41a'
+																				: '#999',
+																			color: 'white',
+																			padding: '2px 8px',
+																			borderRadius: '12px',
+																			fontSize: '12px',
+																			fontWeight: 'bold',
+																		}}
+																	>
+																		-{voucher.discount}%
+																	</span>
+																</div>
+																<div
+																	style={{
+																		fontSize: '12px',
+																		color: '#666',
+																		marginTop: '4px',
+																	}}
+																>
+																	{voucher.description}
+																</div>
+																<div
+																	style={{
+																		fontSize: '11px',
+																		color: '#999',
+																		marginTop: '2px',
+																	}}
+																>
+																	Valid until:{' '}
+																	{new Date(voucher.endDate).toLocaleDateString(
+																		'vi-VN',
+																	)}
+																	{voucher.usageLimit &&
+																		voucher.usageCount !== undefined && (
+																			<span style={{ marginLeft: '8px' }}>
+																				• Used: {voucher.usageCount}/
+																				{voucher.usageLimit}
+																			</span>
+																		)}
+																</div>
+															</div>
+															{voucher.canUse && (
+																<Button
+																	type="primary"
+																	size="small"
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleSelectVoucher(voucher);
+																	}}
+																>
+																	Select
+																</Button>
+															)}
+														</div>
+														{!voucher.canUse && (
+															<div
+																style={{
+																	fontSize: '11px',
+																	color: '#ff4d4f',
+																	marginTop: '4px',
+																}}
+															>
+																{voucher.isExpired
+																	? 'Expired'
+																	: voucher.usageCount !== undefined &&
+																		  voucher.usageLimit !== undefined &&
+																		  voucher.usageCount >= voucher.usageLimit
+																		? 'Usage limit reached'
+																		: 'Not available'}
+															</div>
+														)}
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* Manual Voucher Input */}
+									<Form.Item
+										name="voucherCode"
+										label="Or enter voucher code manually"
+									>
+										<Input.Group compact>
+											<Form.Item
+												name="voucherCode"
+												noStyle
+												getValueFromEvent={(e) => e.target.value}
+											>
+												<Input
+													style={{ width: 'calc(100% - 100px)' }}
+													placeholder="Enter voucher code"
+												/>
+											</Form.Item>
+											<Button
+												type="primary"
+												loading={applyingVoucher}
+												onClick={handleApplyVoucher}
+											>
+												Apply
+											</Button>
+										</Input.Group>
+									</Form.Item>
+								</>
 							)}
 						</Card>
 					</Form>
@@ -911,3 +1100,4 @@ export const Checkout: React.FC = () => {
 		</div>
 	);
 };
+

@@ -1,5 +1,6 @@
 import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../hooks/useCart';
 import { categoryService } from '../services/categoryService';
 import { useUserNotification } from '../services/userNotification';
 import type { Category } from '../types';
@@ -35,6 +36,7 @@ export const Navbar: React.FC = () => {
 	const [searchValue, setSearchValue] = useState('');
 	const [categories, setCategories] = useState<Category[]>([]);
 	const { user, logout } = useAuth();
+	const { cartCount, refreshCart } = useCart();
 	const notification = useUserNotification();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -51,6 +53,14 @@ export const Navbar: React.FC = () => {
 
 		fetchCategories();
 	}, []);
+
+	// Refresh cart khi user thay đổi (login/logout)
+	useEffect(() => {
+		if (user) {
+			refreshCart();
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user]);
 
 	const showDrawer = () => setDrawerVisible(true);
 	const onClose = () => setDrawerVisible(false);
@@ -206,7 +216,7 @@ export const Navbar: React.FC = () => {
 						</div>
 						<div className="flex justify-center">
 							<Link to="/cart">
-								<Badge count={0} offset={[0, 0]}>
+								<Badge count={cartCount} offset={[0, 0]}>
 									<ShoppingCartOutlined
 										style={{ fontSize: '1.5em', cursor: 'pointer' }}
 									/>
@@ -296,7 +306,7 @@ export const Navbar: React.FC = () => {
 				</div>
 				<div style={{ marginTop: 20 }}>
 					<Link to="/cart" onClick={onClose}>
-						<Badge count={0} offset={[0, 0]}>
+						<Badge count={cartCount} offset={[0, 0]}>
 							<ShoppingCartOutlined
 								style={{ fontSize: '1.5em', cursor: 'pointer' }}
 							/>
@@ -307,3 +317,4 @@ export const Navbar: React.FC = () => {
 		</AntHeader>
 	);
 };
+
