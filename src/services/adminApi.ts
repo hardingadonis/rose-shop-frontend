@@ -29,9 +29,15 @@ adminApiClient.interceptors.response.use(
 	(response) => response,
 	(error) => {
 		if (error.response?.status === 401) {
-			localStorage.removeItem('adminToken');
-			localStorage.removeItem('adminUser');
-			window.location.href = '/admin/login';
+			// Don't redirect if this is a login request that failed
+			if (!error.config?.url?.includes('/auth/login')) {
+				localStorage.removeItem('adminToken');
+				localStorage.removeItem('adminUser');
+				// Only redirect if not already on admin login page to prevent reload
+				if (window.location.pathname !== '/admin/login') {
+					window.location.href = '/admin/login';
+				}
+			}
 		}
 		// Let the error bubble up with the full response for proper error handling
 		return Promise.reject(error);

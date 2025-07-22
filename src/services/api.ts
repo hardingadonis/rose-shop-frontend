@@ -33,7 +33,10 @@ apiClient.interceptors.response.use(
 			if (!error.config?.url?.includes('/auth/login')) {
 				localStorage.removeItem('token');
 				localStorage.removeItem('user');
-				window.location.href = '/login';
+				// Only redirect if not already on login page to prevent reload
+				if (window.location.pathname !== '/login') {
+					window.location.href = '/login';
+				}
 			}
 		}
 		return Promise.reject(error);
