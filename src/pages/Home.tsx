@@ -1,5 +1,6 @@
 import { FlowerCard } from '../components/FlowerCard';
 import { COLORS } from '../constants/colors';
+import { useCart } from '../hooks/useCart';
 import { cartService } from '../services/cartService';
 import { categoryService } from '../services/categoryService';
 import { flowerService } from '../services/flowerService';
@@ -53,6 +54,7 @@ const features = [
 
 export const Home: React.FC = () => {
 	const notification = useUserNotification();
+	const { refreshCart } = useCart();
 	const [topCategories, setTopCategories] = useState<Category[]>([]);
 	const [featuredFlowers, setFeaturedFlowers] = useState<Flower[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -83,6 +85,8 @@ export const Home: React.FC = () => {
 	const handleAddToCart = async (flowerId: string) => {
 		try {
 			await cartService.addToCart(flowerId, 1);
+			// Refresh cart context after adding item
+			await refreshCart();
 			notification.addToCartSuccess();
 		} catch (err) {
 			console.error('Error adding to cart:', err);
@@ -267,7 +271,6 @@ export const Home: React.FC = () => {
 				<div className="max-w-7xl mx-auto px-4">
 					<div className="text-center mb-12">
 						<Title level={2}>Top Floral Creations</Title>
-						
 					</div>
 
 					{loading ? (
@@ -315,7 +318,7 @@ export const Home: React.FC = () => {
 							<Title level={4} className="mb-2 font-bold">
 								ROSE SHOP
 							</Title>
-						
+
 							<Paragraph className="text-sm mb-4">
 								Welcome to Rose Shop – where every bouquet tells a story. We are
 								a trusted local florist offering premium floral arrangements and
@@ -376,3 +379,4 @@ export const Home: React.FC = () => {
 		</div>
 	);
 };
+

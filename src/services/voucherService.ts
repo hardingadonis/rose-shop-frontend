@@ -111,6 +111,13 @@ export const voucherService = {
 		return response.data.data;
 	},
 
+	// Get voucher by code
+	getVoucherForUser: async (): Promise<VoucherResponse> => {
+		const response = await api.get(`/user/vouchers`);
+		console.log(response.data.data);
+		return response.data.data;
+	},
+
 	// Validate voucher code
 	validateVoucher: async (voucherCode: string): Promise<VoucherResponse> => {
 		const response = await api.get(`/user/vouchers/validate/${voucherCode}`);
@@ -119,3 +126,4 @@ export const voucherService = {
 };
 
 export default voucherService;
+
